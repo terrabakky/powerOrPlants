@@ -39,14 +39,19 @@
           </button>
           <a class="navbar-brand" href="#">Maps Yo.</a>
         </div>
-        <div id="navbar" class="navbar-collapse collapse">
-        </div><!--/.navbar-collapse -->
+        <div class="navbar-right">
+          <p class="navbar-text pull-right" id="totalRenewable"></p> 
+          <p class="navbar-text pull-right" id="totalNonRenewable"></p>
+        </div>
       </div>
     </nav>
     <div id="map"></div>
     <script type="text/javascript">
 
       var map;
+      var totalRenewable = 0;
+      var totalNonRenewable = 0;
+
       function initMap() {
 
         // Initialize the map
@@ -90,12 +95,27 @@
             var coords = powerData.features[i].geometry.coordinates;
             var latLng = new google.maps.LatLng(coords[1], coords[0]);
             var magnitude = parseFloat(powerData.features[i].properties.generationMW);
+
+            if (powerData.features[i].properties.powerClass === "Renewable") {
+              if (powerData.features[i].properties.generationMW) {
+                totalRenewable += parseFloat(powerData.features[i].properties.generationMW);
+              }
+            }
+
+            else {
+              if (powerData.features[i].properties.generationMW) {
+                totalNonRenewable += parseFloat(powerData.features[i].properties.generationMW);
+              }
+            }
+
             var weightedLoc = {
               location: latLng,
               weight: magnitude
             };
+
             heatmapData.push(weightedLoc);
           }
+
           // add the heatmap with config options
           var heatmap = new google.maps.visualization.HeatmapLayer({
             data: heatmapData,
@@ -104,6 +124,12 @@
             radius: 3,
             map: map
           });
+
+          // Update total output counts
+          $('#totalRenewable').html('<strong>Total Renewable:</strong> ' + 
+                                      Math.round(totalRenewable) + ' MW');
+          $('#totalNonRenewable').html('<strong>Total Non Renewable:</strong> ' +
+                                        Math.round(totalNonRenewable) + ' MW');
         });
       }
 
