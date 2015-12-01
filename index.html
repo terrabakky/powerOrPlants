@@ -38,8 +38,12 @@
             <span class="icon-bar"></span>
           </button>
           <a class="navbar-brand" href="#">Maps Yo.</a>
+
         </div>
+        
         <div class="navbar-right">
+          <button class="navbar-btn btn" onclick="toggleHeatmap()">Toggle Heatmap</button>
+          <button class="navbar-btn btn" onclick="toggleMarkers()">Toggle Markers</button>
           <p class="navbar-text pull-right" id="totalRenewable"></p> 
           <p class="navbar-text pull-right" id="totalNonRenewable"></p>
         </div>
@@ -48,11 +52,38 @@
     <div id="map"></div>
     <script type="text/javascript">
 
-      var map;
+      var map, heatmap;
       var totalRenewable = 0;
       var totalNonRenewable = 0;
 
+      function toggleHeatmap() {
+        heatmap.setMap(heatmap.getMap() ? null : map);
+      }
+
+      function toggleMarkers() {
+        map.data.setMap(map.data.getMap() ? null : map);
+      }
+
       function initMap() {
+        var nonRenewableIcon = {
+          path: fontawesome.markers.FIRE,
+          scale: 0.3,
+          strokeWeight: 0.2,
+          strokeColor: 'red',
+          strokeOpacity: 0.2,
+          fillColor: '#ff0000',
+          fillOpacity: 0.4,
+        };
+
+        var renewableIcon = {
+          path: fontawesome.markers.TREE,
+          scale: 0.3,
+          strokeWeight: 0.2,
+          strokeColor: 'green',
+          strokeOpacity: 0.2,
+          fillColor: '#fff',
+          fillOpacity: 0.4,
+        };
 
         // Initialize the map
         map = new google.maps.Map(document.getElementById('map'), {
@@ -68,12 +99,50 @@
 
         // Style renewable vs non renewable power plants
         map.data.setStyle(function(feature) {
-            var powerClass = feature.getProperty('powerClass');
-            var icon = powerClass === 'Non Renewable' ? 'coal.png' : 'leaf.jpg';
-            return {
-              icon: icon,
-            };
+          var powerClass = feature.getProperty('powerClass');
+
+          var icon = powerClass === 'Non Renewable' ? nonRenewableIcon : renewableIcon;
+          return {
+            icon: icon,
+          };
         });
+
+        var styles = [
+          {
+            "stylers": [
+              { "visibility": "simplified" },
+              { "saturation": -100 },
+              { "invert_lightness": true }
+            ]
+          },{
+            "featureType": "road",
+            "stylers": [
+              { "weight": 0.6 },
+              { "color": "#e3e0a5" },
+              { "visibility": "simplified" },
+              { "hue": "#ff0008" }
+            ]
+          },{
+            "featureType": "administrative.locality",
+            "elementType": "labels.text",
+            "stylers": [
+              { "visibility": "off" }
+            ]
+          },{
+            "featureType": "poi",
+            "stylers": [
+              { "visibility": "off" }
+            ]
+          },{
+            "featureType": "road",
+            "elementType": "labels",
+            "stylers": [
+              { "visibility": "off" }
+            ]
+          }
+        ];
+
+        map.setOptions({styles: styles});
 
         // Add click listener to each marker
         map.data.addListener('click', function(event) {
@@ -87,6 +156,8 @@
         // Make the heatmap
         var heatmapData = [];
         var powerData;
+
+
         // load the json data
         $.getJSON('powerplants.json', function(data) {
           powerData = data;
@@ -117,10 +188,10 @@
           }
 
           // add the heatmap with config options
-          var heatmap = new google.maps.visualization.HeatmapLayer({
+          heatmap = new google.maps.visualization.HeatmapLayer({
             data: heatmapData,
             dissipating: false,
-            opacity: 0.4,
+            opacity: 0.3,
             radius: 3,
             map: map
           });
@@ -139,6 +210,7 @@
     <script>window.jQuery || document.write('<script src="js/vendor/jquery-1.11.2.min.js"><\/script>')</script>
 
     <script src="js/vendor/bootstrap.min.js"></script>
+    <script src="js/vendor/fontawesome-markers.js"></script>
 
     <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD652Tl7esfYV9-LVQOibtbkOiEhC5nEdc&amp;libraries=visualization&amp;callback=initMap"></script>
   </body>
