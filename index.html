@@ -48,32 +48,62 @@
 
       var map;
       function initMap() {
+
+        // Initialize the map
         map = new google.maps.Map(document.getElementById('map'), {
           center: {lat: -25.694224, lng: 133.780327},
           zoom: 4
         });
 
+        // Create infowindow object
         var infoWindow = new google.maps.InfoWindow();
 
         // Add geojson data to map
-        map.data.loadGeoJson('powerplants.js');
+        map.data.loadGeoJson('powerplants.json');
 
         // Style renewable vs non renewable power plants
         map.data.setStyle(function(feature) {
             var powerClass = feature.getProperty('powerClass');
-            console.log(powerClass);
             var icon = powerClass === 'Non Renewable' ? 'coal.png' : 'leaf.jpg';
             return {
               icon: icon,
             };
         });
 
+        // Add click listener to each marker
         map.data.addListener('click', function(event) {
-          var description = event.feature.getProperty('description');
+          var description = '<div class="infowindow">' + event.feature.getProperty('description') + '</div>';
           infoWindow.setContent(description);
           infoWindow.setPosition(event.feature.getGeometry().get());
-          infoWindow.setOptions({pixelOffset: new google.maps.Size(0,-30)});
+          infoWindow.setOptions({pixelOffset: new google.maps.Size(0,-20)});
           infoWindow.open(map);
+        });
+
+        // Make the heatmap
+        var heatmapData = [];
+        var powerData;
+        // load the json data
+        $.getJSON('powerplants.json', function(data) {
+          powerData = data;
+          // iterate through the data and build weighted location objects
+          for (var i = 0; i < powerData.features.length; i++) {
+            var coords = powerData.features[i].geometry.coordinates;
+            var latLng = new google.maps.LatLng(coords[1], coords[0]);
+            var magnitude = parseFloat(powerData.features[i].properties.generationMW);
+            var weightedLoc = {
+              location: latLng,
+              weight: magnitude
+            };
+            heatmapData.push(weightedLoc);
+          }
+          // add the heatmap with config options
+          var heatmap = new google.maps.visualization.HeatmapLayer({
+            data: heatmapData,
+            dissipating: false,
+            opacity: 0.4,
+            radius: 3,
+            map: map
+          });
         });
       }
 
@@ -84,7 +114,6 @@
 
     <script src="js/vendor/bootstrap.min.js"></script>
 
-    <script src="js/main.js"></script>
-    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD652Tl7esfYV9-LVQOibtbkOiEhC5nEdc&amp;callback=initMap"></script>
+    <script async defer src="https://maps.googleapis.com/maps/api/js?key=AIzaSyD652Tl7esfYV9-LVQOibtbkOiEhC5nEdc&amp;libraries=visualization&amp;callback=initMap"></script>
   </body>
 </html>
